@@ -45,7 +45,7 @@
   * but they should really all be private. */
 class testAsynPortDriver : public asynPortDriver {
 public:
-    testAsynPortDriver(const char *portName, int maxArraySize);
+    testAsynPortDriver(const char *portName, int maxArraySize, int nchan);
 
     /* These are the methods that we override from asynPortDriver */
     virtual asynStatus writeInt32(asynUser *pasynUser, epicsInt32 value);
@@ -81,6 +81,7 @@ protected:
 private:
     /* Our data */
     epicsEventId eventId_;
+    int nchan;
     epicsFloat64 *pData_;
     epicsFloat64 *pTimeBase_;
     // Actual volts per division are these values divided by vertical gain

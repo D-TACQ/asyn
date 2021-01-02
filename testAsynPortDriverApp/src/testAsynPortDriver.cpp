@@ -46,15 +46,16 @@ void simTask(void *drvPvt);
   * Calls constructor for the asynPortDriver base class.
   * \param[in] portName The name of the asyn port driver to be created.
   * \param[in] maxPoints The maximum  number of points in the volt and time arrays */
-testAsynPortDriver::testAsynPortDriver(const char *portName, int maxPoints)
+testAsynPortDriver::testAsynPortDriver(const char *portName, int maxPoints, int _nchan)
    : asynPortDriver(portName,
-                    1, /* maxAddr */
+                    _nchan, /* maxAddr */
                     asynInt32Mask | asynFloat64Mask | asynFloat64ArrayMask | asynEnumMask | asynDrvUserMask, /* Interface mask */
                     asynInt32Mask | asynFloat64Mask | asynFloat64ArrayMask | asynEnumMask,  /* Interrupt mask */
                     0, /* asynFlags.  This driver does not block and it is not multi-device, so flag is 0 */
                     1, /* Autoconnect */
                     0, /* Default priority */
-                    0) /* Default stack size*/
+                    0) /* Default stack size*/,
+					nchan(_nchan)
 {
     asynStatus status;
     int i;
@@ -64,7 +65,7 @@ testAsynPortDriver::testAsynPortDriver(const char *portName, int maxPoints)
     if (maxPoints < 1) maxPoints = 100;
 
     /* Allocate the waveform array */
-    pData_ = (epicsFloat64 *)calloc(maxPoints, sizeof(epicsFloat64));
+    pData_ = (epicsFloat64 *)calloc(maxPoints*nchan, sizeof(epicsFloat64));
 
     /* Allocate the time base array */
     pTimeBase_ = (epicsFloat64 *)calloc(maxPoints, sizeof(epicsFloat64));
@@ -176,15 +177,22 @@ void testAsynPortDriver::simTask(void)
         maxValue = -1e6;
         meanValue = 0.;
 
+
         yScale = 1.0 / voltsPerDiv;
         for (i=0; i<maxPoints; i++) {
-            noise = noiseAmplitude * (rand()/(double)RAND_MAX - 0.5);
-            pData_[i] = AMPLITUDE * (sin(time*FREQUENCY*2*pi)) + noise;
-            /* Compute statistics before doing the yOffset and yScale */
-            if (pData_[i] < minValue) minValue = pData_[i];
-            if (pData_[i] > maxValue) maxValue = pData_[i];
-            meanValue += pData_[i];
-            pData_[i] = NUM_DIVISIONS/2 + yScale * (voltOffset + pData_[i]);
+
+        	double ft = sin(time*FREQUENCY*2*pi);
+        	for (int c=0; c<nchan; c++){
+        		int ix = c*maxPoints + i;
+
+        		noise = noiseAmplitude * (rand()/(double)RAND_MAX - 0.5);
+        		pData_[ix] = c+ AMPLITUDE *ft  + noise;
+        		/* Compute statistics before doing the yOffset and yScale */
+        		if (pData_[ix] < minValue) minValue = pData_[ix];
+        		if (pData_[ix] > maxValue) maxValue = pData_[ix];
+        		if (c==0) meanValue += pData_[ix];
+        		pData_[ix] = NUM_DIVISIONS/2 + yScale * (voltOffset + pData_[ix]);
+        	}
             time += timeStep;
         }
         updateTimeStamp();
@@ -193,7 +201,9 @@ void testAsynPortDriver::simTask(void)
         setDoubleParam(P_MaxValue, maxValue);
         setDoubleParam(P_MeanValue, meanValue);
         callParamCallbacks();
-        doCallbacksFloat64Array(pData_, maxPoints, P_Waveform, 0);
+        for (int c=0; c<nchan; c++){
+        	doCallbacksFloat64Array(pData_+c*maxPoints, maxPoints, P_Waveform, c);
+        }
     }
 }
 
@@ -319,7 +329,7 @@ asynStatus testAsynPortDriver::readFloat64Array(asynUser *pasynUser, epicsFloat6
     getIntegerParam(P_MaxPoints, &itemp); ncopy = itemp;
     if (nElements < ncopy) ncopy = nElements;
     if (function == P_Waveform) {
-        memcpy(value, pData_, ncopy*sizeof(epicsFloat64));
+    	assert(0);
         *nIn = ncopy;
     }
     else if (function == P_TimeBase) {
@@ -400,9 +410,9 @@ extern "C" {
 /** EPICS iocsh callable function to call constructor for the testAsynPortDriver class.
   * \param[in] portName The name of the asyn port driver to be created.
   * \param[in] maxPoints The maximum  number of points in the volt and time arrays */
-int testAsynPortDriverConfigure(const char *portName, int maxPoints)
+int testAsynPortDriverConfigure(const char *portName, int maxPoints, int nchan)
 {
-    new testAsynPortDriver(portName, maxPoints);
+    new testAsynPortDriver(portName, maxPoints, nchan);
     return(asynSuccess);
 }
 
@@ -411,12 +421,12 @@ int testAsynPortDriverConfigure(const char *portName, int maxPoints)
 
 static const iocshArg initArg0 = { "portName",iocshArgString};
 static const iocshArg initArg1 = { "max points",iocshArgInt};
-static const iocshArg * const initArgs[] = {&initArg0,
-                                            &initArg1};
-static const iocshFuncDef initFuncDef = {"testAsynPortDriverConfigure",2,initArgs};
+static const iocshArg initArg2 = { "max chan",iocshArgInt};
+static const iocshArg * const initArgs[] = {&initArg0, &initArg1, &initArg2};
+static const iocshFuncDef initFuncDef = {"testAsynPortDriverConfigure",3,initArgs};
 static void initCallFunc(const iocshArgBuf *args)
 {
-    testAsynPortDriverConfigure(args[0].sval, args[1].ival);
+    testAsynPortDriverConfigure(args[0].sval, args[1].ival, args[2].ival);
 }
 
 void testAsynPortDriverRegister(void)
