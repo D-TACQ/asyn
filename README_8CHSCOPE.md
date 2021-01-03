@@ -1,18 +1,19 @@
 # README_8CHSCOPE
-## Mark Rivers' asynPortDriver example extended to show 8CH
-## cs-studio OPI
+.. Mark Rivers' asynPortDriver example extended to show 8CH
+.. cs-studio OPI
 
-## It runs REALLY QUICK!
+### It runs REALLY QUICK!
 
-# Build:
+## Build:
 First build EPICS BASE and support with asyn (see end)..
 
 # Running Instructions:
+
+## IOC
 cd /home/pgm/PROJECTS/ACQ164/support/asyn/iocBoot/ioctestAsynPortDriver
 ../../testAsynPortDriverApp/src/O.linux-x86_64/testAsynPortDriver st.cmd
 
-
-# To run the UI
+## To run the UI
 Set up a cs-studio workspace, include this OPI:
 opi/boy/FakeScope.opi
 
