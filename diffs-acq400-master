@@ -1,0 +1,49 @@
+Master was at:
+commit 88d0c4f749f2b160cd13b1aba10206c642b43adc (HEAD -> master, origin/master, origin/HEAD)
+Merge: 868b613 7f5f905
+Author: Mark Rivers <rivers@cars.uchicago.edu>
+Date:   Fri Dec 14 12:45:09 2018 -0600
+
+    Merge pull request #78 from shadowguy/patch-1
+    
+    Fix typo
+
+
+
+[pgm@hoy5 asyn]$ git diff master
+diff --git a/configure/CONFIG_SITE b/configure/CONFIG_SITE
+index ffa637e..be31667 100644
+--- a/configure/CONFIG_SITE
++++ b/configure/CONFIG_SITE
+@@ -50,7 +50,7 @@ LINUX_GPIB=NO
+ 
+ # Some linux systems moved RPC related symbols to libtirpc
+ # To enable linking against this library, uncomment the following line
+-# TIRPC=YES
++TIRPC=YES
+ 
+ -include $(SUPPORT)/configure/CONFIG_SITE
+ 
+diff --git a/configure/RELEASE b/configure/RELEASE
+index b206bff..cd964b2 100644
+--- a/configure/RELEASE
++++ b/configure/RELEASE
+@@ -1,15 +1,8 @@
+ #RELEASE Location of external products
+ 
+-SUPPORT=/corvette/home/epics/devel
++SUPPORT=/usr/local/epics/modules/
++EPICS_BASE=/usr/local/epics/base
+ -include $(TOP)/../configure/SUPPORT.$(EPICS_HOST_ARCH)
+ 
+-#  IPAC is only necessary if support for Greensprings IP488 is required
+-#  IPAC release V2-7 or later is required.
+-IPAC=$(SUPPORT)/ipac-2-14
+-
+-# SEQ is required for testIPServer
+-SNCSEQ=$(SUPPORT)/seq-2-2-5
+-
+ #  EPICS_BASE 3.14.6 or later is required
+-EPICS_BASE=/corvette/usr/local/epics-devel/base-7.0.1
+ -include $(TOP)/../configure/EPICS_BASE.$(EPICS_HOST_ARCH)
+
