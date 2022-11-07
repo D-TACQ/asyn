@@ -10,10 +10,9 @@
 
 #include <stdexcept>
 
-using std::logic_error;
-class ParamListInvalidIndex: public logic_error {
+class ParamListInvalidIndex: public std::logic_error {
 public:
-	ParamListInvalidIndex(const std::string& description);
+    ParamListInvalidIndex(const std::string& description);
 };
 
 #endif /* PARAMLISTINVALIDINDEX_H_ */

@@ -10,10 +10,9 @@
 
 #include <stdexcept>
 
-using std::logic_error;
-class ParamValStringSizeRequestTooBig: public logic_error {
+class ParamValStringSizeRequestTooBig: public std::logic_error {
 public:
-	ParamValStringSizeRequestTooBig(const std::string& description);
+    ParamValStringSizeRequestTooBig(const std::string& description);
 };
 
 #endif /* PARAMVALSTRINGSIZEREQUESTTOOBIG_H_ */

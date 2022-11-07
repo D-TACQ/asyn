@@ -11,10 +11,9 @@
 #include <string>
 #include <stdexcept>
 
-using std::logic_error;
-class ParamValNotDefined: public logic_error {
+class ParamValNotDefined: public std::logic_error {
 public:
-	ParamValNotDefined(const std::string& description);
+    ParamValNotDefined(const std::string& description);
 };
 
 #endif /* PARAMVALNOTDEFINED_H_ */

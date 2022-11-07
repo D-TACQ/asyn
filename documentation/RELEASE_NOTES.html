@@ -12,6 +12,551 @@
   <div style="text-align: center">
     <hr />
     <h2>
+      Release 4-43</h2>
+    <h2>
+      September 12, 2022</h2>
+  </div>
+  <h3>
+    devEpics
+  </h3>
+  <ul>
+    <li>Change logic for output records with asyn:READBACK so they set udf=0 in the outputcallbackcallback()
+      function, and not in the processXX function. This is needed to correctly clear the
+      UDF status and severity.
+      <ul>
+        <li>This problem is happening because for EPICS output records the only way to clear
+          a UDF alarm is to put a value into the record, either from an external put from
+          a CA or DB link (in which case code in the dbAccess.c dbPut() routine clears UDF
+          and the record would get processed) or by reading a value through the DOL link during
+          record processing triggered by some other means.</li>
+        <li>In both cases UDF will have been cleared before the call to checkAlarms() in the
+          boRecord::process() routine, which is where the UDF field is checked.</li>
+        <li>Unfortunately for asyn all output records call the checkAlarms() routine before
+          the device support's write_bo() routine, so clearing UDF in processBo() is too late
+          for this process cycle, the UDF_ALARM has already been registered.</li>
+        <li>This also means that if the bo record is configured with non-zero alarms in ZSV
+          or OSV the initial read wouldn't trigger the appropriate STATE_ALARM either, since
+          they get set in that routine as well. </li>
+      </ul>
+    </li>
+  </ul>
+  <h3>
+    drvAsynUSBTMC
+  </h3>
+  <ul>
+    <li>Add support for output terminator.</li>
+    <li>Increase buffer size to 1 MB.</li>
+    <li>Add Remote Enable (REN), Local Lockout (LLO), and Go To Local (GTL) support.</li>
+  </ul>
+  <h3>
+    asynPortDriver
+  </h3>
+  <ul>
+    <li>Fixed initialization problem for UInt32 parameters. Initially setting a parameter
+      to 0 left the corresponding PV undefined because the callback wasn't called. Thanks
+      to Erico Nogueira for this fix.</li>
+    <li>Removed "using std::logic_error" from parameter header files. This is bad practice.
+      This change could potentially break downstream module that would now have to use
+      std::logic_error, rather than just logic_error. This is unlikely since the param
+      classes are essential private to asynPortDriver. Thanks to Luka Krmpotic for this
+      fix.</li>
+  </ul>
+  <h3>
+    drvAsynIPServerPort
+  </h3>
+  <ul>
+    <li>Allow specifying an interface to bind the IP server port. The second argument
+      to drvAsynIPServerPortConfigure allows specifying a hostname or IP address for multi-homed
+      machines. If you want to specify any interface, use "localhost:port", an empty host
+      ":port" or the address "0.0.0.0:port". The address has to be an existing interface
+      on the host. If the name cannot be resolved, the call will fail. If you need the
+      loopback interface, use "127.0.0.1:port". Thanks to Lutz Rossa for this.</li>
+  </ul>
+  <h3>
+    asynShellCommands
+  </h3>
+  <ul>
+    <li>Provide usage information for asynSetTraceMask and asynSetTraceIOMask. This is
+      helpful for remembering how to specify the bit masks numerically or symbolically.
+      Thanks to Michael Davidsaver for this.</li>
+  </ul>
+  <h3>
+    asynManager
+  </h3>
+  <ul>
+    <li>Added asynDisconnected and asynDisabled in strStatus(). Thanks to Kristian Loki
+      for this.</li>
+  </ul>
+  <h3>
+    configure/RELEASE
+  </h3>
+  <ul>
+    <li>All external modules are commented out. Users will need to uncomment the ones
+      to be used.</li>
+  </ul>
+  <h3>
+    drvVxi11
+  </h3>
+  <ul>
+    <li>Fix potential VXI connection resource leak. Thanks to Freddie Akeroyd for this.</li>
+  </ul>
+  <h3>
+    .ci
+  </h3>
+  <ul>
+    <li>Change from Travis to Github Actions. Thanks to Michael Davidsaver for this.</li>
+    <li>Add support from sscan, calc, and ipac. Thanks to Freddie Akeroyd for this.</li>
+  </ul>
+  <h3>
+    devGPIB and streamSCPI template files
+  </h3>
+  <ul>
+    <li>Changed DB_INSTALLS+= to DB+= to work with recent versions of EPICS.</li>
+  </ul>
+  <div style="text-align: center">
+    <hr />
+    <h2>
+      Release 4-42</h2>
+    <h2>
+      May 10, 2021</h2>
+  </div>
+  <h3>
+    drvProligixGPIB
+  </h3>
+  <ul>
+    <li>New driver for the Proligix GPIB-Ethernet controller. Thanks to Eric Norum for
+      this. This $200 device makes GPIB devices available over Ethernet. It uses a proprietary
+      protocol, not VXI-11. </li>
+  </ul>
+  <h3>
+    asynPortDriver</h3>
+  <ul>
+    <li>Added checks for invalid list (<0 or >=maxAddr).</li>
+    <li>Added new error code asynParamInvalidList that is returned if the list passed
+      is not valid.</li>
+  </ul>
+  <h3>
+    devCommonGPIB.c</h3>
+  <ul>
+    <li>Added 0 termination after strncpy().</li>
+  </ul>
+  <h3>
+    asynInterposeEos</h3>
+  <ul>
+    <li>Improve efficiency when eosOutLen is 0.</li>
+  </ul>
+  <h3>
+    asynRecord</h3>
+  <ul>
+    <li>Minor changes to avoid compiler warnings.</li>
+  </ul>
+  <div style="text-align: center">
+    <hr />
+    <h2>
+      Release 4-41</h2>
+    <h2>
+      September 19, 2020</h2>
+  </div>
+  <h3>
+    Many files</h3>
+  <ul>
+    <li>Changed the code and the Makefile to avoid using shareLib.h from EPICS base. Added
+      a new header file asynAPI.h that is used to control whether functions, classes,
+      and variables are definined internally to the asyn library or externally. This is
+      the mechanism now used in EPICS base 7. It makes it much easier to avoid mistakes
+      in the order of include files that cause external functions to be accidentally exported
+      in the asyn DLL or shareable library. This should work on all versions of base,
+      and have no impact on user code.</li>
+  </ul>
+  <h3>
+    devAsynInt32.c, devAsynUInt32Digital.c</h3>
+  <ul>
+    <li>Replaced strncpy()) with memcpy() to avoid compiler warnings on newer versions
+      of gcc (e.g. 8.3.1).</li>
+  </ul>
+  <div style="text-align: center">
+    <hr />
+    <h2>
+      Release 4-40-1</h2>
+    <h2>
+      August 24, 2020</h2>
+  </div>
+  <h3>
+    drvAsynIPPort</h3>
+  <ul>
+    <li>Fixed the logic for using SO_REUSEPORT or SO_RESUSEADDR. In R4-40 RTEMS and Windows
+      used SO_REUSEADDR and all others used SO_REUSEPORT. This does not work because Linux
+      kernels before 3.9 also do not support SO_REUSEPORT. Now if SO_REUSEPORT is not
+      defined then SO_REUSEADDR is used instead.</li>
+  </ul>
+  <div style="text-align: center">
+    <hr />
+    <h2>
+      Release 4-40</h2>
+    <h2>
+      July 17, 2020</h2>
+  </div>
+  <div>
+    <h3>
+      ci-scripts</h3>
+    <ul>
+      <li>Updated to v3.0.1 of ci-scripts.</li>
+      <li>Added native Windows builds (VS2017) on Travis.</li>
+      <li>Added AppVeyor builds for testing on many Windows configuations.</li>
+    </ul>
+    <h3>
+      asynPortDriver</h3>
+    <ul>
+      <li>Fixed error in writeInt64 method.</li>
+      <li>Added asynParamSet class.</li>
+      <li>Added new constuctor that uses asynParamSet.</li>
+      <li>Added new utility template function findDerivedAsynPortDriver() that returns a
+        pointer to an asynPortDriver derived class object from its name.</li>
+    </ul>
+    <h3>
+      Build system</h3>
+    <ul>
+      <li>Fixed logic for when CALC and SSCAN modules are needed.</li>
+    </ul>
+    <h3>
+      asynManager</h3>
+    <ul>
+      <li>Take connect timestamp <i>after</i> connection attempt. autoConnectDevice() has
+        a built-in protection that forces at least 2 seconds between connection attempts.
+        However, previously the timestamp was read <i>before</i> starting the connection,
+        so if the connection attempt takes about 2 seconds (or more) to timeout then that
+        2 second do-not-connect window was already expired (or about to expire) by the time
+        connectAttempt() returns. Now we read the timestamp <i>after</i> connectAttempt()
+        returns. </li>
+      <li>Made 2 changes to queueLockPort.
+        <ol>
+          <li>If the queue request times out then return asynTimeout rather than asynError.</li>
+          <li>If the call to pasynManager->queueRequest fails then return the actual failure
+            status rather than asynError.</li>
+        </ol>
+        These changes improve the alarm handling when a device becomes unavailable. Previously
+        it would toggle between TIMEOUT alarm when an actual read request timed out and
+        READ alarm when a queue request timed out. This caused too many alarms. Previously
+        if the port was Disconnected then it was returning asynError which sets READ alarm.
+        In this case it should be returning asynDisconnected which sets COM alarm. </li>
+    </ul>
+    <h3>
+      asynTrace</h3>
+    <ul>
+      <li>Changed the output with ASYN_TRACEINFO_SOURCE. Previously the file name included
+        the complete path to the file, which could be very long. The path is now removed.</li>
+    </ul>
+    <h3>
+      asynPortClient</h3>
+    <ul>
+      <li>Fix bug in asynUInt32DigitalClient::registerInterruptUser().</li>
+    </ul>
+    <h3>
+      asynRecord</h3>
+    <ul>
+      <li>Fixed problem updating the CNCT field. Previously if an attempt to connect with
+        CNCT failed CNCT stayed in the Connected state, rather than going back to Disconnected
+        immediately.</li>
+    </ul>
+    <h3>
+      drvAsynIPPort</h3>
+    <ul>
+      <li>Added new tcp&, udp& and udp*& protocols that specify that the SO_RESUSEPORT flag
+        should be used. <a href="https://lwn.net/Articles/542629/">This article</a> explains
+        the use of the SO_REUSEPORT option for both TCP and UDP. The particular use case
+        that motivated the addition of the SO_REUSEPORT to this driver is discussed in <a
+          href="https://github.com/epics-modules/asyn/issues/108">this Github issue</a>.
+        On Windows and RTEMS SO_REUSEADDR is used instead of SO_RESUSEPORT, but it should
+        have the same effect.</li>
+    </ul>
+    <h3>
+      unittest/Makefile</h3>
+    <ul>
+      <li>Fixed to link with EPICS_BASE_IOC_LIBS unless EPICS_LIBCOM_ONLY=YES.</li>
+    </ul>
+    <h3>
+      devEpics</h3>
+    <ul>
+      <li>Fixed bug in devAsynOctet when using output records with info tag asynREADBACK=1
+        and asynFIFO not specified. It was supposed to be creating a ring buffer with one
+        element, but was not, so the readback did not work.</li>
+    </ul>
+    <h3>
+      Many files</h3>
+    <ul>
+      <li>Removed tabs and trailing white space.</li>
+      <li>Minor changes to avoid compiler warnings.</li>
+    </ul>
+  </div>
+  <div style="text-align: center">
+    <hr />
+    <h2>
+      Release 4-39</h2>
+    <h2>
+      February 24, 2020</h2>
+  </div>
+  <div>
+    <h3>
+      Travis CI</h3>
+    <ul>
+      <li>Added ci-scripts module to provide much more complete testing. Thanks to Ralph
+        Lange for this.
+        <ul>
+          <li>Against EPICS 7.0 / 3.15.7 / 3.14.12.8 / 3.14.12.2</li>
+          <li>Using g++ and clang</li>
+          <li>Static and dynamic builds</li>
+          <li>Cross-compilation to Windows using MinGW</li>
+          <li>Cross-compilation to RTEMS 4.9 and 4.10 (including running the tests under qemu)</li>
+          <li>On MacOS</li>
+          <li>EPICS_LIBCOM_ONLY builds</li>
+        </ul>
+      </li>
+    </ul>
+    <h3>
+      FTDI driver</h3>
+    <ul>
+      <li>Added minimal SPI support for AD9915. Thanks to Juri Tagger for this.</li>
+    </ul>
+    <h3>
+      asynPortDriver</h3>
+    <ul>
+      <li>Fixes to callbackThread for problems when calling the asynPortDriver destructor.</li>
+    </ul>
+    <h3>
+      devEpics</h3>
+    <ul>
+      <li>Added asynOctet support for lso, lsi, printf, and sCalcout records. Thanks to
+        Freddie Akeroyd for this.</li>
+    </ul>
+    <h3>
+      asynInterposeEos</h3>
+    <ul>
+      <li>asynInterposeEos checks each byte for EOS. If it cannot find it and nRead &ge;
+        maxchars, then previously it set the eom to ASYN_EOM_CNT using a bitwise OR. In
+        this way, multiple flags can be propagated to the requester of the read. Since ASYN_EOM_CNT
+        is not an end flag, but other two (ASYN_EOM_EOS and ASYN_EOM_END) are, it does not
+        make sense to propagate a combination of end and non-end flag. Thus if the nRead
+        &ge; maxchars is true, now set eom = ASYN_EOM_CNT, i.e. without bitwise OR. This
+        fixes a problem with StreamDevice on some VXI-11 devices. Thanks to Jernej Varlec
+        for this.</li>
+    </ul>
+    <h3>
+      OPI files</h3>
+    <ul>
+      <li>Added .bob files for CS-Studio (Phoebus). These are autoconverted from medm .adl
+        files</li>
+    </ul>
+  </div>
+  <div style="text-align: center">
+    <hr />
+    <h2>
+      Release 4-38</h2>
+    <h2>
+      January 3, 2020</h2>
+  </div>
+  <div>
+    <h3>
+      devEpics</h3>
+    <ul>
+      <li>Added asynInt64 support for longout, longin, ao, and ai records. This allows these
+        records to be used to communicate with drivers on the asynInt64 interface. This
+        can be useful when running versions of base prior to 3.16.1 where the int64out and
+        int64in records are not available. The ao and ai records can exactly represent up
+        to 52-bit integers, while the longin and longout are limited to 32-bit integers.</li>
+    </ul>
+    <h3>
+      FTDI driver</h3>
+    <ul>
+      <li>Fixed missing argument to the iocsh drvAsynFTDIPortConfigure() command.</li>
+    </ul>
+    <h3>
+      drvVxi11</h3>
+    <ul>
+      <li>Fixed spurious connection error message.</li>
+    </ul>
+  </div>
+  <div style="text-align: center">
+    <hr />
+    <h2>
+      Release 4-37</h2>
+    <h2>
+      October 18, 2019</h2>
+  </div>
+  <div>
+    <h3>
+      Added new 64-bit integer support</h3>
+    <ul>
+      <li>asynDriver adds new asynInt64, asynInt64SyncIO, and asynInt64Array interfaces.</li>
+      <li>asynDriver.h now does the typedef of epicsInt64 and epicsUInt64 when __STDC_VERSION__
+        &lt 199901L on EPICS 3.14. This allows the Int64 interfaces to be built as long
+        as the compiler supports the <code>long long</code> and <code>unsigned long long</code>
+        data types.</li>
+      <li>devEpics.dbd is now constructed at build time rather than being a static file.
+        This enables Int64 device support to only be included on EPICS 3.16.1 and later.</li>
+      <li>asynPortDriver adds support for 64-bit integers:
+        <ul>
+          <li>New parameter types asynParamInt64 and asynParamInt64Array.</li>
+          <li>New methods setInteger64Param(), getInteger64Param(), readInt64(), writeInt64(),
+            getBounds64(), readInt64Array(), writeInt64Array(), doCallbacksInt64Array().</li>
+          <li>New masks for constructor asynInt64Mask, asynInt64ArrayMask.</li>
+        </ul>
+      </li>
+    </ul>
+    <h3>
+      testErrors test application</h3>
+    <ul>
+      <li>Changes to driver, database and medm screens to test the Int64 interfaces. This
+        uses the 64-bit device support which must be commented of out st.cmd if running
+        on EPICS versions prior to 3.16.1.</li>
+    </ul>
+    <h3>
+      New FTDI driver</h3>
+    <ul>
+      <li>This driver allows much greater control over USB ports for serial communication
+        than the standard Linux /dev/ttyUSBx driver. Thanks to Bruno Martins for this.</li>
+    </ul>
+    <h3>
+      devEpics</h3>
+    <ul>
+      <li>Fixes to only print an error message when the status of a write or read operation
+        changes, not each time there is an error. Thanks to Ben Franksen for this.</li>
+    </ul>
+    <h3>
+      asynRecord</h3>
+    <ul>
+      <li>Fixes to allow changing the HOSTINFO for the asynIPPort driver when the port is
+        not connected. Thanks to Krisztián Löki for this.</li>
+    </ul>
+    <h3>
+      Many files</h3>
+    <ul>
+      <li>Changes to avoid compiler warnings.</li>
+    </ul>
+  </div>
+  <div style="text-align: center">
+    <hr />
+    <h2>
+      Release 4-36</h2>
+    <h2>
+      August 8, 2019</h2>
+  </div>
+  <div>
+    <h3>
+      asynManager</h3>
+    <ul>
+      <li>Improved debugging output when scheduling queue request timeout.</li>
+    </ul>
+    <h3>
+      drvAsynIPPort</h3>
+    <ul>
+      <li>Improved diagnostic messages.</li>
+    </ul>
+    <h3>
+      asynPortDriver</h3>
+    <ul>
+      <li>Added new parseAsynUser() method. Changed all readXXX and writeXXX methods to
+        use this, rather than getAddress().</li>
+      <li>Use asynPortDriver::getAddress() in callback functions, rather than pasynManager::getAddress().
+        This allows the getAddress() to be overridden in derived classes.</li>
+      <li>Fix to prevent a potentially locked mutex from being destroyed, as well as use-after-free
+        bugs on other members of asynPortDriver. Thanks to Martin Konrad for this.</li>
+    </ul>
+    <h3>
+      asynInterposeDelay, asynInteposeEcho</h3>
+    <ul>
+      <li>Fixes to compile on Visual Studio 2010.</li>
+    </ul>
+  </div>
+  <div style="text-align: center">
+    <hr />
+    <h2>
+      Release 4-35</h2>
+    <h2>
+      March 18, 2019</h2>
+  </div>
+  <div>
+    <h3>
+      devAsynInt32, devAsynFloat64, devAsynUInt32Digital, devAsynOctet</h3>
+    <ul>
+      <li>Fixed a deadlock problem when asyn:READBACK was used on output records.</li>
+      <li>In devAsynOctet there was still an isssue if asyn:READBACK=1 was used without
+        asyn:FIFO, i.e. when ring buffers were not enabled. The code now forces a minimum
+        ring buffer size of 1 if asyn:READBACK=1 to avoid the deadlock. asyn:FIFO can still
+        be used to select a larger ring buffer size. </li>
+    </ul>
+  </div>
+  <div>
+    <h3>
+      drvAsynIPPort</h3>
+    <ul>
+      <li>Fixed a problem with the disconnectOnReadTimeout option. Previously it would disconnect
+        even if pasynUser->timeout was 0. This is not logical, and meant this option could
+        not be used with StreamDevice, because StreamDevices flushes the input by reading
+        with a timeout of 0 to support I/O Intr scanned records.</li>
+      <li>Updated the documentation to say that in order to receive UDP broadcast messages
+        the <code>localPort</code> parameter in the hostInfo string in <code>drvAsynIPPortConfigure</code>
+        must be specified. Example: <code>drvAsynIPPortConfigure("BD","255.255.255.255:1234:3956
+          UDP",0,0,0)</code> will listen for broadcast messages on port 3956. If the port
+        is only to be used to receive broadcast messages then the UDP protocol should be
+        specified. If the port is also to be used to send UDP broadcasts then the UDP* protocol
+        must be specified. Example: <code>drvAsynIPPortConfigure("BD","255.255.255.255:1234:3956
+          UDP*",0,0,0)</code>. In this case it will send the broadcast messages on UDP port
+        1234 and listen for broadcast messages on UDP port 3956.</li>
+    </ul>
+  </div>
+  <div>
+    <h3>
+      asynShellCommands</h3>
+    <ul>
+      <li>Enhancement to allow using strings for the mask arguments of asynSetTraceMask,
+        asynSetTraceIOMask, and asynSetTraceInfoMask shell functions. The mask can be specified
+        as an integer (previous behavior) or as symbolic names connected with + or |. Spaces
+        are allowed but require quotes. The symbolic names are like the macro names in asyn.h,
+        but not case sensitive and the prefixes ASYN_, TRACE_, TRACEIO_, and TRACEINFO_
+        are optional. Thanks to Dirk Zimoch for this. Examples:</li></ul>
+    <pre>
+         asynSetTraceMask port,0,ASYN_TRACE_ERROR 
+        asynSetTraceIOMask port,0,ascii+escape 
+        asynSetTraceInfoMask port,0,1+port+TRACEINFO_SOURCE|ASYN_TRACEINFO_THREAD
+</pre>
+    <h3>
+      asynPortClient.h, asynPortClient.cpp</h3>
+    <ul>
+      <li>Renamed asynPortClient base class to asynParamClient. This is the class from which
+        asynInt32Client, asynFloat64Client, etc. are derived.</li>
+      <li>The new asynPortClient class connects to a specific asynPortDriver object. It
+        creates an asynParamClient derived class object for each of the parameters in that
+        driver. It uses the std::map class to map between the parameter name key and the
+        asynParamClient object for that parameter. It also defines overloaded write() and
+        read() methods that take a paramName argument and the value to be written or pointer
+        to read into. The data type of the value or pointer must match the parameter type
+        or a run-time exception will be thrown. This new class is more convenient to use
+        because it is no longer necessary to create the asynInt32Client, asynFloat64Client,
+        etc. objects for each parameter to be accessed.</li>
+    </ul>
+    <h3>
+      asynPortDriver</h3>
+    <ul>
+      <li>Added asynPortDriver::getNumParams() method to get the number of parameters currently
+        defined.</li>
+    </ul>
+    <h3>
+      asynInterposeDelay</h3>
+    <ul>
+      <li>New interpose driver that waits for a user-specified time after sending each character
+        before sending the next one. Some poorly designed devices require this. Thanks to
+        Dirk Zimoch.</li>
+    </ul>
+    <h3>
+      asynInterposeEcho</h3>
+    <ul>
+      <li>New interpose driver that waits for a device to echo each character before sending
+        the next one. Some poorly designed devices require this. Thanks to Dirk Zimoch.</li>
+    </ul>
+  </div>
+  <div style="text-align: center">
+    <hr />
+    <h2>
       Release 4-34</h2>
     <h2>
       September 13, 2018</h2>

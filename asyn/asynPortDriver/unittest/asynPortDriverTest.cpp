@@ -16,9 +16,17 @@
 #include <asynPortDriver.h>
 #include <asynPortClient.h>
 
-// fake out asynPortDriver callback dispatching
-extern "C" int interruptAccept;
-int interruptAccept=1;
+// Need interrupt accept from dbAccess.h unless asyn is built with EPICS_LIBCOM_ONLY
+#ifdef EPICS_LIBCOM_ONLY
+    static int interruptAccept;
+#else
+    #include <dbAccess.h>
+#endif
+
+#ifdef __rtems__
+// no test data needed (when running individual CI tests)
+const void* epicsRtemsFSImage = 0;
+#endif
 
 namespace {
 
@@ -81,6 +89,7 @@ void testA()
 
     testOk1(portA->createParam(0, "int32", asynParamInt32, &idx2)==asynError);
 
+    testOk1(portA->createParam(0, "int64", asynParamInt64, &idx1)==asynSuccess);
     testOk1(portA->createParam(0, "float64", asynParamFloat64, &idx1)==asynSuccess);
     testOk1(portA->createParam(0, "uint32", asynParamUInt32Digital, &idx1)==asynSuccess);
     testOk1(portA->createParam(0, "y", asynParamInt32, &idx1)==asynSuccess);
@@ -160,7 +169,7 @@ void testA()
 
 MAIN(asynPortDriverTest)
 {
-    testPlan(53);
+    testPlan(54);
     interruptAccept=1;
     try {
         testA();
