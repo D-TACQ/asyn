@@ -39,6 +39,8 @@
 #include <asynFloat32Array.h>
 #include <asynFloat64Array.h>
 
+#include <string.h>
+
 #define DEFAULT_RING_BUFFER_SIZE 0
 #define INIT_OK 0
 #define INIT_DO_NOT_CONVERT 2
@@ -64,6 +66,7 @@ private:
         epicsAlarmSeverity  alarmSeverity;
     };
 
+    bool 		aardvark_init_zero_done;
     RECORD_TYPE         *pRecord_;
     asynUser            *pasynUser_;
     INTERFACE           *pInterface_;
@@ -91,10 +94,18 @@ private:
     int                 unsignedType_;
     asynStatus          previousQueueRequestStatus_;
 
+
+    /* valid for class with no vtable only */
+    bool init_zero() {
+	    memset(this, 0, sizeof(*this));
+	    return true;
+    }
+
 public:
 
     devAsynXXXArray(dbCommon *pRecord, DBLINK *plink, int signedType, int unsignedType, bool isOutput, const char *interfaceType,
                     userCallback qrCallback, INTERRUPT interruptCallback):
+        aardvark_init_zero_done(init_zero()),
         pRecord_((RECORD_TYPE*) pRecord),
         interruptCallback_(interruptCallback),
         interfaceType_(epicsStrDup(interfaceType)),
