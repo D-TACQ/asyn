@@ -1859,6 +1859,7 @@ asynStatus asynPortDriver::doCallbacksArray(epicsType *value, size_t nElements,
             pInterrupt->callback(pInterrupt->userPvt,
                                  pInterrupt->pasynUser,
                                  value, nElements);
+            break;
         }
         pnode = (interruptNode *)ellNext(&pnode->node);
     }
